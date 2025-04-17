@@ -1,11 +1,11 @@
 import json
 
-from datetime import datetime
 from decimal import Decimal
 
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from aa.fin.models import Brand, Spend
@@ -47,12 +47,12 @@ def register_spend(request, brand_id):
 
 def campaign_status(request, brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
-    now = datetime.now()
+    now = timezone.now()
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month_start = day_start.replace(day=1)
     spends = Spend.objects.filter(brand=brand, datetime__lte=now)
-    amount_today = spends.filter(datetime__gte=day_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0)
-    amount_this_month = spends.filter(datetime__gte=month_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0)
+    amount_today = round(spends.filter(datetime__gte=day_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0.0), ndigits=2)
+    amount_this_month = round(spends.filter(datetime__gte=month_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0.0), ndigits=2)
     return JsonResponse({
         'spends_this_month': amount_this_month,
         'spends_today': amount_today,

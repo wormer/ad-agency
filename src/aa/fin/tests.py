@@ -36,7 +36,7 @@ class ViewTest(TestCase):
             Spend.objects.create(brand=brand2, amount=1)
             Spend.objects.create(brand=brand3, amount=1)
 
-    def test_check_spends(self):
+    def test_check_brands(self):
         response = self.client.get(reverse('brand_details', args=[1]))
         data = response.json()
         self.assertEqual(data['name'], 'Amazon')
@@ -53,13 +53,46 @@ class ViewTest(TestCase):
         self.assertEqual(data['monthly_budget'], '0.00')
         self.assertEqual(data['daily_budget'], '1.00')
 
-    def test_update_spends(self):
+    def test_update_brands(self):
         post_data = {
             'monthly_budget': 3500,
             'daily_budget': 300,
         }
-        self.client.post(reverse('brand_details', args=[1]), data=post_data)
+        self.client.post(reverse('brand_details', args=[1]), data=post_data, content_type='application/json')
         response = self.client.get(reverse('brand_details', args=[1]))
         data = response.json()
         self.assertEqual(data['monthly_budget'], '3500.00')
         self.assertEqual(data['daily_budget'], '300.00')
+
+    def test_campaign_status(self):
+        response = self.client.get(reverse('campaign_status', args=[1]))
+        data = response.json()
+        self.assertEqual(data['spends_this_month'], '9.00')
+        self.assertEqual(data['spends_today'], '9.00')
+        self.assertEqual(data['is_active'], True)
+        response = self.client.get(reverse('campaign_status', args=[2]))
+        data = response.json()
+        self.assertEqual(data['spends_this_month'], '9.00')
+        self.assertEqual(data['spends_today'], '9.00')
+        self.assertEqual(data['is_active'], True)
+        response = self.client.get(reverse('campaign_status', args=[3]))
+        data = response.json()
+        self.assertEqual(data['spends_this_month'], '9.00')
+        self.assertEqual(data['spends_today'], '9.00')
+        self.assertEqual(data['is_active'], False)
+
+    def test_register_spend(self):
+        response = self.client.get(reverse('campaign_status', args=[2]))
+        data = response.json()
+        self.assertEqual(data['spends_today'], '9.00')
+        self.assertEqual(data['spends_this_month'], '9.00')
+        self.assertEqual(data['is_active'], True)
+        post_data = {
+            'amount': 1.0,
+        }
+        self.client.post(reverse('register_spends', args=[2]), data=post_data, content_type='application/json')
+        response = self.client.get(reverse('campaign_status', args=[2]))
+        data = response.json()
+        self.assertEqual(data['spends_today'], '10.00')
+        self.assertEqual(data['spends_this_month'], '10.00')
+        self.assertEqual(data['is_active'], False)
