@@ -1,5 +1,6 @@
 import json
 
+from datetime import datetime
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -11,6 +12,33 @@ from django.views.decorators.csrf import csrf_exempt
 from aa.fin.models import Brand, Spend
 
 
+def dayparting_from_json(json_list):
+    dayparting = []
+    for pair in json_list:
+        if isinstance(pair, list) and len(pair) == 2:
+            from_time_str, to_time_str = pair
+            try:
+                from_time = datetime.strptime(from_time_str, '%H:%M').time()
+            except ValueError:
+                continue
+            try:
+                to_time = datetime.strptime(to_time_str, '%H:%M').time()
+            except ValueError:
+                continue
+            dayparting.append([from_time, to_time])
+    return dayparting
+
+
+def dayparting_to_json(dayparting):
+    json_list = []
+    for pair in dayparting:
+        from_time, to_time = pair
+        from_time_str = from_time.strftime('%H:%M')
+        to_time_str = to_time.strftime('%H:%M')
+        json_list.append([from_time_str, to_time_str])
+    return json_list
+
+
 @csrf_exempt
 def brand_details(request, brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
@@ -20,17 +48,21 @@ def brand_details(request, brand_id):
         if name:
             brand.name = name
         monthly_budget = data.get('monthly_budget')
-        if monthly_budget:
+        if monthly_budget is not None:
             brand.monthly_budget = monthly_budget
         daily_budget = data.get('daily_budget')
-        if daily_budget:
+        if daily_budget is not None:
             brand.daily_budget = daily_budget
+        dayparting = data.get('dayparting')
+        if dayparting is not None and isinstance(dayparting, list):
+            brand.dayparting = dayparting_to_json(dayparting_from_json(dayparting))
         brand.save()
         return JsonResponse({})
     return JsonResponse({
         'name': brand.name,
         'monthly_budget': brand.monthly_budget,
         'daily_budget': brand.daily_budget,
+        'dayparting': brand.dayparting,
     })
 
 
