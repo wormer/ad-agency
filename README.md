@@ -13,9 +13,11 @@ This project simulates an Ad Agency that manages multiple brands, each with its 
 
 ## How to Run
 
-### Install dependencies and run the server
+### Clone and run the project
 
 ```bash
+git clone https://github.com/wormer/ad-agency.git
+cd ad-agency
 pip install -r requirements.txt
 src/manage.py migrate
 src/manage.py runserver
