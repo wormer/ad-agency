@@ -39,6 +39,12 @@ def dayparting_to_json(dayparting):
     return json_list
 
 
+def is_time_in_dayparting(time, dayparting):
+    if dayparting == []:
+        return True
+    return any([from_time < time < to_time for from_time, to_time in dayparting])
+
+
 @csrf_exempt
 def brand_details(request, brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
@@ -85,8 +91,9 @@ def campaign_status(request, brand_id):
     spends = Spend.objects.filter(brand=brand, datetime__lte=now)
     amount_today = round(spends.filter(datetime__gte=day_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0.0), ndigits=2)
     amount_this_month = round(spends.filter(datetime__gte=month_start).aggregate(sum=Sum('amount'))['sum'] or Decimal(0.0), ndigits=2)
+    is_dayparting_respected = is_time_in_dayparting(now.time(), dayparting_from_json(brand.dayparting))
     return JsonResponse({
         'spends_this_month': amount_this_month,
         'spends_today': amount_today,
-        'is_active': amount_this_month < brand.monthly_budget and amount_today < brand.daily_budget,
+        'is_active': is_dayparting_respected and amount_this_month < brand.monthly_budget and amount_today < brand.daily_budget,
     })
