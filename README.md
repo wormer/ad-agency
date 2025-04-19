@@ -206,3 +206,51 @@ Returns a list of all brands.
 ```json
 {}
 ```
+
+## Pseudocode
+
+### 1. **`brand_list`** - View for getting a list of brands or creating a new brand.
+
+```pseudo
+function brand_list(request):
+    if request method is GET:
+        return a list of all brands with their id and name
+    if request method is POST:
+        parse data from the request (name, monthly_budget, daily_budget, dayparting)
+        create a new brand with the provided data
+        return the id of the newly created brand
+```
+
+### 2. **`brand_details`** - View for getting and updating the details of a specific brand.
+
+```pseudo
+function brand_details(request, brand_id):
+    find the brand by its id
+    if request method is POST:
+        update the brand's name, monthly_budget, daily_budget, or dayparting based on the request data
+        save the updated brand information
+    return the brand's details as JSON (name, monthly_budget, daily_budget, dayparting)
+```
+
+### 3. **`register_spend`** - View for registering a spend for a specific brand.
+
+```pseudo
+function register_spend(request, brand_id):
+    find the brand by its id
+    if request method is POST:
+        parse amount from the request data
+        create a new Spend record for the brand with the given amount
+    return a success response
+```
+
+### 4. **`campaign_status`** - View for checking the current campaign status for a specific brand.
+
+```pseudo
+function campaign_status(request, brand_id):
+    find the brand by its id
+    get the current time
+    calculate total spends for today and this month
+    check if the current time respects the brand's dayparting schedule
+    determine if the campaign is active based on the budget and dayparting
+    return the campaign status (spends today, spends this month, and if the campaign is active)
+```
