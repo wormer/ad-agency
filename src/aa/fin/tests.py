@@ -1,5 +1,8 @@
+from datetime import time
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import Brand, Spend
 
@@ -35,6 +38,20 @@ class ViewTest(TestCase):
             Spend.objects.create(brand=brand1, amount=1)
             Spend.objects.create(brand=brand2, amount=1)
             Spend.objects.create(brand=brand3, amount=1)
+        self.brand_with_dayparting = Brand.objects.create(
+            name='NightBrand',
+            monthly_budget=1000,
+            daily_budget=100,
+            dayparting=[['03:00', '04:00']],
+        )
+        Spend.objects.create(brand=self.brand_with_dayparting, amount=10)
+        self.brand_all_day = Brand.objects.create(
+            name='AllDayBrand',
+            monthly_budget=1000,
+            daily_budget=100,
+            dayparting=[],
+        )
+        Spend.objects.create(brand=self.brand_all_day, amount=10)
 
     def test_check_brands(self):
         response = self.client.get(reverse('brand_details', args=[1]))
@@ -96,3 +113,32 @@ class ViewTest(TestCase):
         self.assertEqual(data['spends_today'], '10.00')
         self.assertEqual(data['spends_this_month'], '10.00')
         self.assertEqual(data['is_active'], False)
+
+    def test_dayparting_respected(self):
+        now = timezone.now().time()
+        is_in_dayparting = time(3, 0) <= now <= time(4, 0)
+        response = self.client.get(reverse('campaign_status', args=[self.brand_with_dayparting.id]))
+        data = response.json()
+        if not is_in_dayparting:
+            self.assertEqual(data['is_active'], False)
+        else:
+            self.assertEqual(data['is_active'], True)
+
+    def test_dayparting_allows(self):
+        response = self.client.get(reverse('campaign_status', args=[self.brand_all_day.id]))
+        data = response.json()
+        self.assertEqual(data['is_active'], True)
+
+    def test_dayparting_serialization(self):
+        input_dayparting = [['08:00', '10:00'], ['13:30', '14:00']]
+        post_data = {
+            'name': 'TestBrand',
+            'monthly_budget': 1000,
+            'daily_budget': 100,
+            'dayparting': input_dayparting,
+        }
+        response = self.client.post(reverse('brand_list'), data=post_data, content_type='application/json')
+        brand_id = response.json()['id']
+        response = self.client.get(reverse('brand_details', args=[brand_id]))
+        data = response.json()
+        self.assertEqual(data['dayparting'], input_dayparting)
