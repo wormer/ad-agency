@@ -46,6 +46,32 @@ def is_time_in_dayparting(time, dayparting):
 
 
 @csrf_exempt
+def brand_list(request):
+    brands = Brand.objects.all()
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        name = data['name']
+        monthly_budget = data['monthly_budget']
+        daily_budget = data['daily_budget']
+        dayparting = data.get('dayparting', [])
+        brand = Brand.objects.create(
+            name=name,
+            daily_budget=daily_budget,
+            monthly_budget=monthly_budget,
+            dayparting=dayparting_to_json(dayparting_from_json(dayparting)),
+        )
+        return JsonResponse({
+            'id': brand.id,
+        })
+    return JsonResponse({
+        'brands': [{
+            'id': brand.id,
+            'name': brand.name,
+        } for brand in brands],
+    })
+
+
+@csrf_exempt
 def brand_details(request, brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
     if request.method == 'POST':
